@@ -2,33 +2,25 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-const CLICKUP_API_KEY = process.env.CLICKUP_API_KEY; // sua API key
-const STATUS_EM_ANDAMENTO = "em andamento"; // nome exato do status no seu espaço
+const CLICKUP_API_KEY = process.env.CLICKUP_API_KEY;
+const STATUS_EM_ANDAMENTO = "EM ANDAMENTO";
 
-// ClickUp envia eventos para esta rota
 app.post("/webhook", async (req, res) => {
   const event = req.body;
-
-  // Responde imediatamente para o ClickUp não retentar
   res.status(200).send("ok");
 
-  // Só processa eventos de criação de subtarefa
   if (event.event !== "taskCreated") return;
 
   const subtask = event.task_id;
   if (!subtask) return;
 
   try {
-    // Busca detalhes da subtarefa para pegar o parent
     const taskData = await getTask(subtask);
-
-    // Se não tiver parent, não é subtarefa — ignora
     if (!taskData.parent) return;
 
     const parentId = taskData.parent;
     console.log(`Subtarefa criada: ${subtask} | Tarefa mãe: ${parentId}`);
 
-    // Atualiza o status da tarefa mãe
     await updateTaskStatus(parentId, STATUS_EM_ANDAMENTO);
     console.log(`Status da tarefa mãe ${parentId} atualizado para "${STATUS_EM_ANDAMENTO}"`);
   } catch (err) {
@@ -63,5 +55,4 @@ async function updateTaskStatus(taskId, status) {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`Webhook endpoint: POST http://localhost:${PORT}/webhook`);
 });
